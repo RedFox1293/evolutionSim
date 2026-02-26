@@ -66,3 +66,24 @@ jobs:
         with:
           name: ${{ matrix.artifact_name }}
           path: dist/EvolutionSim-macos.zip
+      - name: Create macOS DMG
+        if: runner.os == 'macOS'
+        run: |
+          APP="dist/EvolutionSim.app"
+          DMG_NAME="EvolutionSim-macos.dmg"
+          STAGING="dmg-staging"
+
+          rm -rf "$STAGING"
+          mkdir -p "$STAGING"
+          cp -R "$APP" "$STAGING/"
+
+          # Create a DMG
+          hdiutil create -volname "EvolutionSim" -srcfolder "$STAGING" -ov -format UDZO "$DMG_NAME"
+          ls -lah "$DMG_NAME"
+
+      - name: Upload macOS DMG
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: EvolutionSim-macos-dmg
+          path: EvolutionSim-macos.dmg
