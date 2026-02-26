@@ -14,9 +14,9 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            artifact_name: myapp-windows
+            artifact_name: EvolutionSim-windows
           - os: macos-latest
-            artifact_name: myapp-macos
+            artifact_name: EvolutionSim-macos
 
     runs-on: ${{ matrix.os }}
 
@@ -48,7 +48,7 @@ jobs:
       - name: Build macOS app
         if: runner.os == 'macOS'
         run: |
-          PyInstaller --clean --noconfirm --windowed --name "Simple Evolution Simulator" evolutionSim.py
+          PyInstaller --clean --noconfirm --onefile --windowed --name "Simple Evolution Simulator" evolutionSim.py
           ls dist
           # Optional: zip the .app for artifact upload
           ditto -c -k --sequesterRsrc --keepParent "dist/EvolutionSim.app" "dist/EvolutionSim-macos.zip"
