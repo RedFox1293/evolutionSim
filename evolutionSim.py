@@ -39,36 +39,42 @@ CONFIG = {
     "grid_width": 80,
     "grid_height": 60,
     # Population
-    "starting_species": 5,
+    "starting_species": 8,
     "pop_cap": 5000,            # global hard ceiling (emergency OOM guard only)
-    "prey_cap": 500,            # per-species K for a pure prey species  (surv→0)
-    "pred_cap": 300,            # per-species K for a pure predator species (surv→1)
+    "prey_cap": 400,            # per-species K for a pure prey species  (surv→0)
+    "pred_cap": 40,             # per-species K for a pure predator species (surv→1)
     "initial_pop_per_species": 20,   # fallback if initial_pops not set
     # Per-species starting counts (index matches INITIAL_SPECIES_TRAITS).
-    # Prey start abundant; predators start scarce so prey can establish first.
-    "initial_pops": [8, 10, 18, 35, 35],
+    # Two clusters of competing predator species (will fight to dominate their niche),
+    # and four competing prey species (most will eventually be displaced).
+    "initial_pops": [22, 20, 14, 16, 22, 26, 30, 34],
     # Environment
-    "env_drift_freq": 500,          # steps between environmental drift events
+    "env_drift_freq": 300,          # steps between environmental drift events
     # Mutation
-    "mutation_bias": 0.90,          # fraction of mutations that are adverse
+    "mutation_bias": 0.60,          # fraction of mutations that are adverse
     # Speciation
-    "speciation_threshold": 0.40,   # normalised trait-space distance threshold
-    "speciation_min_outliers": 5,   # min persistent outliers to trigger fork
-    "speciation_outlier_steps": 20, # consecutive steps individual must be outlier
-    "jump_speciation_threshold": 0.65,  # large mutation → accumulate outlier_steps 3x faster
+    "speciation_threshold": 0.30,   # normalised trait-space distance threshold (lower = easier fork)
+    "speciation_min_outliers": 4,   # min persistent outliers to trigger fork
+    "speciation_outlier_steps": 4,  # consecutive steps individual must be outlier
+    "jump_speciation_threshold": 0.50,  # large mutation → accumulate outlier_steps 3x faster
+    # Macro-mutations: rare large jumps that rapidly diverge a lineage
+    "macro_mut_prob":  0.008,       # per-offspring probability of a macro-mutation event
+    "macro_mut_scale": 4.0,         # all trait deltas scaled up by this factor during macro events
     # History
     "history_interval": 10,         # steps between history snapshots
     # Coupling constants  rep_rate ~ k / survivability^alpha
-    # Lower k keeps rep_rates manageable so LV dynamics have time to play out.
     "k_coupling": 0.08,
     "alpha_coupling": 1.50,
     "max_rep_rate": 3.0,
     # Predation (Lotka-Volterra -b·P·Q term)
-    "predation_beta": 5.0,      # neighbourhood predation coefficient — higher = more deadly predators
-    # Kill-bonus replication: expected offspring per kill = surv * kill_rep_scale
-    "kill_rep_scale": 1.5,      # Poisson mean for battle kill bonus (apex pred ~1.4 offspring/kill)
+    "predation_beta": 2.5,      # neighbourhood predation coefficient
+    # Kill-bonus replication: expected offspring per kill = surv * kill_rep_scale (Poisson)
+    "kill_rep_scale": 0.80,     # predators must rely on kills; apex pred gets ~0.7 offspring/kill
+    # Trophic replication suppression: base_rep *= (1-surv)^trophic_exp
+    # so high-surv predators barely self-replicate and truly depend on kill bonuses.
+    "trophic_exp": 1.5,
     # Battle
-    "battle_sharpness": 0.75,       # amplifies win-prob spread; 0.5 = original linear formula
+    "battle_sharpness": 0.85,       # amplifies win-prob spread; higher = more decisive battles
     # Pygame window
     "window_width": 1200,
     "window_height": 800,
@@ -123,19 +129,32 @@ COLOR_PALETTE = [
 
 SHAPES = ["circle", "triangle", "square", "diamond", "pentagon", "hexagon"]
 
-# Hard-coded initial 5 species — pre-seeded as a trophic pyramid.
-# rep_rate is computed from the k/s^alpha formula at initialisation time.
-#   Index 0 — apex predator      (tier 3): very high surv, almost immortal, stable genome
-#   Index 1 — secondary predator (tier 2): high surv, long-lived, low mutation
-#   Index 2 — mesopredator       (tier 1-2): medium surv / generalist
-#   Index 3 — primary prey       (tier 1): low surv, short-lived, fast breeder
-#   Index 4 — abundant prey      (tier 0): tiny surv, very short-lived, very fast breeder
+# Hard-coded initial 8 species — seeded as three ecological clusters that will
+# compete internally, with natural selection and speciation producing the trophic
+# pyramid over time.  rep_rate is computed from k/s^alpha at initialisation.
+#
+#   Cluster A — two high-surv predators that will compete to dominate that niche:
+#     Index 0: apex-contender  (surv=0.88, very slow, very stable)
+#     Index 1: rival predator  (surv=0.74, faster but sloppier)
+#
+#   Cluster B — two mid-surv mesopredators / generalists:
+#     Index 2: alpha generalist (surv=0.52)
+#     Index 3: beta generalist  (surv=0.38)
+#
+#   Cluster C — four prey/fast-breeder species competing in the bottom niche:
+#     Index 4: surv=0.22  (slow prey — will likely be outcompeted)
+#     Index 5: surv=0.12
+#     Index 6: surv=0.06
+#     Index 7: surv=0.02  (abundant, ultra-fast breeders)
 INITIAL_SPECIES_TRAITS = [
-    {"survivability": 0.92, "rep_age": 110.0, "mutation_rate": 0.03, "env_score": 0.80},
-    {"survivability": 0.68, "rep_age":  75.0, "mutation_rate": 0.10, "env_score": 0.65},
-    {"survivability": 0.42, "rep_age":  48.0, "mutation_rate": 0.22, "env_score": 0.52},
-    {"survivability": 0.15, "rep_age":  22.0, "mutation_rate": 0.38, "env_score": 0.38},
-    {"survivability": 0.05, "rep_age":  10.0, "mutation_rate": 0.55, "env_score": 0.25},
+    {"survivability": 0.88, "rep_age": 108.0, "mutation_rate": 0.03, "env_score": 0.78},
+    {"survivability": 0.74, "rep_age":  85.0, "mutation_rate": 0.08, "env_score": 0.70},
+    {"survivability": 0.52, "rep_age":  60.0, "mutation_rate": 0.16, "env_score": 0.60},
+    {"survivability": 0.38, "rep_age":  45.0, "mutation_rate": 0.26, "env_score": 0.50},
+    {"survivability": 0.22, "rep_age":  30.0, "mutation_rate": 0.36, "env_score": 0.40},
+    {"survivability": 0.12, "rep_age":  18.0, "mutation_rate": 0.46, "env_score": 0.32},
+    {"survivability": 0.06, "rep_age":  11.0, "mutation_rate": 0.56, "env_score": 0.25},
+    {"survivability": 0.02, "rep_age":   7.0, "mutation_rate": 0.65, "env_score": 0.18},
 ]
 
 
@@ -205,41 +224,55 @@ class Individual:
         stability_bonus = 1.0 + 0.15 * (1.0 - self.traits["mutation_rate"])
         return base * stability_bonus
 
-    def mutate(self, env_optimum: float) -> dict:
+    def mutate(self, env_optimum: float, macro: bool = False) -> dict:
         """
         Produce a mutated trait dictionary for an offspring.
 
-        90% of mutations per trait are adverse (move toward lower fitness).
+        Normal mode: per-trait Gaussian deltas scaled by eff_mut.
+        Macro mode (macro=True): all deltas are scaled up by CONFIG["macro_mut_scale"],
+        modelling rare large-jump mutations (punctuated equilibrium events). These
+        offspring diverge rapidly from the parent species mean, accelerating speciation.
+
         The survivability <-> rep_rate inverse coupling is maintained at
         70% weight toward the theoretical value with 30% free drift.
         """
         t = self.traits
         # Effective mutation rate reduced when env_score is high (well-adapted)
         eff_mut = t["mutation_rate"] * (1.0 - 0.5 * t["env_score"])
+        # Macro-mutation amplifier: large rare events jump far in trait space.
+        ms = CONFIG.get("macro_mut_scale", 4.0) if macro else 1.0
         new = dict(t)
 
-        # Mutate rep_age and survivability (adverse = decrease)
-        for trait in ("rep_age", "survivability"):
-            scale = TRAIT_SCALES[trait]
-            adv   = TRAIT_ADVERSE_DIR[trait]   # -1
-            sign  = adv if random.random() < CONFIG["mutation_bias"] else -adv
-            delta = abs(random.gauss(0.0, eff_mut * scale)) * sign
-            lo, hi = TRAIT_RANGES[trait]
-            new[trait] = clamp(t[trait] + delta, lo, hi)
+        # rep_age: 75% adverse (decreases) — lifespans erode unless selected against.
+        ra_sign = -1 if random.random() < 0.75 else 1
+        new["rep_age"] = clamp(
+            t["rep_age"] + abs(random.gauss(0.0, eff_mut * TRAIT_SCALES["rep_age"] * ms)) * ra_sign,
+            *TRAIT_RANGES["rep_age"]
+        )
+
+        # survivability: NEUTRAL mutation (50 / 50) — both predator and prey are
+        # viable evolutionary strategies, so there is no single "adverse" direction.
+        # Battle selection and trophic kill-bonuses alone determine which surv level
+        # is stable for a given lineage.
+        surv_sign = 1 if random.random() < 0.50 else -1
+        new["survivability"] = clamp(
+            t["survivability"] + abs(random.gauss(0.0, eff_mut * TRAIT_SCALES["survivability"] * ms)) * surv_sign,
+            *TRAIT_RANGES["survivability"]
+        )
 
         # env_score: 90% of mutations move TOWARD the environmental optimum,
         # modelling adaptive pressure: well-adapted offspring are more viable.
         env_toward_optimum = 1.0 if t["env_score"] < env_optimum else -1.0
         env_sign = (env_toward_optimum if random.random() < CONFIG["mutation_bias"]
                     else -env_toward_optimum)
-        env_delta = abs(random.gauss(0.0, eff_mut * TRAIT_SCALES["env_score"])) * env_sign
+        env_delta = abs(random.gauss(0.0, eff_mut * TRAIT_SCALES["env_score"] * ms)) * env_sign
         new["env_score"] = clamp(t["env_score"] + env_delta, *TRAIT_RANGES["env_score"])
 
         # mutation_rate mutates at rate * 0.1  (adverse = increase)
         mr_sign = (TRAIT_ADVERSE_DIR["mutation_rate"]
                    if random.random() < CONFIG["mutation_bias"]
                    else -TRAIT_ADVERSE_DIR["mutation_rate"])
-        mr_delta = abs(random.gauss(0.0, t["mutation_rate"] * 0.1)) * mr_sign
+        mr_delta = abs(random.gauss(0.0, t["mutation_rate"] * 0.1 * ms)) * mr_sign
         new["mutation_rate"] = clamp(
             t["mutation_rate"] + mr_delta, *TRAIT_RANGES["mutation_rate"]
         )
@@ -250,7 +283,7 @@ class Individual:
             CONFIG["k_coupling"], CONFIG["alpha_coupling"], CONFIG["max_rep_rate"]
         )
         free_drift = clamp(
-            t["rep_rate"] + random.gauss(0.0, eff_mut * 0.5),
+            t["rep_rate"] + random.gauss(0.0, eff_mut * 0.5 * ms),
             *TRAIT_RANGES["rep_rate"]
         )
         new["rep_rate"] = clamp(
@@ -389,9 +422,6 @@ class SimulationEngine:
         self.history: list = []
         self.event_log: list = []  # NOTE: can grow large over long runs
 
-        # Battle flash effects consumed by Visualizer
-        self.battle_flashes: list = []
-
         # Colour reuse suppression: color -> step of extinction
         self._recently_extinct_colors: dict = {}
 
@@ -448,7 +478,7 @@ class SimulationEngine:
         self._update_outlier_counters()
         self._update_species_means()
 
-        if self.step_count % 50 == 0:
+        if self.step_count % 25 == 0:
             self._check_speciation_forks()
 
         self._check_extinctions()
@@ -481,15 +511,36 @@ class SimulationEngine:
     def _process_encounters(self) -> None:
         """Resolve one battle per occupied cell that has >= 2 individuals."""
         to_remove: list = []
-        for (x, y), id_list in list(self.grid.items()):
+        for id_list in list(self.grid.values()):
             # Filter to IDs still alive this step
             valid = [i for i in id_list
                      if i in self.individuals and i not in to_remove]
             if len(valid) < 2:
                 continue
 
-            id_a, id_b = random.sample(valid, 2)
+            # Prefer same-tier battles: pick id_a randomly, then bias id_b toward
+            # a similar survivability opponent.  Weight = 1/(0.05 + |surv_a − surv_b|).
+            # This keeps apex predators fighting each other (not just wiping out mid-tier)
+            # and lets prey compete among themselves; cross-tier predation happens via
+            # the neighbourhood predation sweep (_process_predation).
+            id_a = random.choice(valid)
             ind_a = self.individuals[id_a]
+            others = [i for i in valid if i != id_a]
+            if len(others) == 1:
+                id_b = others[0]
+            else:
+                s_a = ind_a.traits["survivability"]
+                wts = [1.0 / (0.05 + abs(s_a - self.individuals[i].traits["survivability"]))
+                       for i in others]
+                total_w = sum(wts)
+                r = random.random() * total_w
+                cum = 0.0
+                id_b = others[-1]
+                for i, w in zip(others, wts):
+                    cum += w
+                    if r < cum:
+                        id_b = i
+                        break
             ind_b = self.individuals[id_b]
 
             eff_a = ind_a.effective_survivability(self.env_optimum)
@@ -509,7 +560,6 @@ class SimulationEngine:
 
             self._log_event("battle_death", loser)
             to_remove.append(loser.id)
-            self.battle_flashes.append({"x": x, "y": y, "timer": 5})
 
             # Kill-replication bonus: Poisson-distributed offspring from each kill.
             # Expected offspring = surv * kill_rep_scale, giving apex predators
@@ -526,17 +576,36 @@ class SimulationEngine:
 
     def _species_cap(self, sp: "Species") -> int:
         """
-        Per-species carrying capacity K derived from mean survivability.
+        Per-species carrying capacity K.
 
-        Interpolates linearly between prey_cap (surv→0, high K) and pred_cap
-        (surv→1, low K), creating distinct ecological niches:
-            surv=0.1  →  K ≈ 458   (abundant prey)
-            surv=0.5  →  K ≈ 290   (generalist)
-            surv=0.9  →  K ≈ 122   (scarce predator)
+        Below threshold (surv ≤ 0.55): independent per-species K.
+            surv=0.02 → K ≈ 393   surv=0.52 → K ≈ 213
+        Mid-tier generalists (0.35 < surv ≤ 0.55) get a moderate independent K
+        that lets them coexist without competing against apex predators.
+
+        True apex predators (surv > 0.55): share a fixed ecological budget
+        (pred_k × 5 = 200 total).  The more apex species coexist, the smaller
+        each one's K, so they compete directly — one winner gradually claims
+        the full budget as rivals go extinct.
+            1 apex species → K = 200
+            2 apex species → K = 100 each
+            4 apex species → K = 50 each
         """
         surv = sp.mean_traits.get("survivability", 0.5)
-        prey_k = self.config.get("prey_cap", 500)
-        pred_k = self.config.get("pred_cap",  80)
+        prey_k = self.config.get("prey_cap", 400)
+        pred_k = self.config.get("pred_cap", 40)
+        pred_threshold = 0.55
+
+        if surv > pred_threshold:
+            # Count living predator species (shared budget)
+            n_pred = max(1, sum(
+                1 for s in self.species.values()
+                if s.alive and s.mean_traits.get("survivability", 0) > pred_threshold
+            ))
+            total_pred_budget = pred_k * 5   # = 200 total ecological space for predators
+            return max(5, round(total_pred_budget / n_pred))
+
+        # Prey: per-species K scales with preyness
         return max(5, round(prey_k * (1.0 - surv) + pred_k * surv))
 
     def _process_replication(self) -> None:
@@ -584,23 +653,31 @@ class SimulationEngine:
             burden_penalty = max(0.15, 1.0 - ind.mutation_burden)
             # Environmental fitness bonus: well-adapted individuals breed faster
             env_boost = ind.compute_fitness_bonus(self.env_optimum)
-            lam = ind.traits["rep_rate"] * logistic * burden_penalty * env_boost
+            # Trophic suppression: high-survivability predators self-replicate very
+            # little — they must depend on kill bonuses to grow their population.
+            # (1-surv)^exp → apex (surv=0.88): 0.0028; prey (surv=0.02): 0.94
+            trophic_exp = self.config.get("trophic_exp", 1.5)
+            trophic_factor = max(0.005, (1.0 - ind.traits["survivability"]) ** trophic_exp)
+            lam = ind.traits["rep_rate"] * logistic * burden_penalty * env_boost * trophic_factor
             if lam <= 0.0:
                 continue
+            macro_prob = self.config.get("macro_mut_prob", 0.0)
             n = min(int(np.random.poisson(lam)), 10)
             for _ in range(n):
                 if total_pop + len(new_offspring) >= hard_cap:
                     break
                 if species_pops[ind.species_id] >= K_sp:
                     break                                   # hit K mid-loop
+                macro = random.random() < macro_prob
                 child = Individual(ind.species_id,
-                                   ind.mutate(self.env_optimum),
+                                   ind.mutate(self.env_optimum, macro=macro),
                                    (ind.x, ind.y), self.step_count)
                 new_offspring.append(child)
                 species_pops[child.species_id] += 1         # live update
 
         # Kill-bonus replication (battle winners + predation kills).
-        # Predators may exceed K by up to 2× during prey booms (LV overshoot).
+        # This is the PRIMARY reproduction channel for predators (trophic_factor
+        # nearly eliminates their self-replication).  Strictly capped at species K.
         for ind_id in self._replication_queue:
             if ind_id not in self.individuals:
                 continue
@@ -614,13 +691,14 @@ class SimulationEngine:
                 continue
             sp_pop = species_pops[ind.species_id]
             K_sp   = self._species_cap(sp)
-            if sp_pop >= 2 * K_sp:        # hard stop: predator boom ceiling
+            if sp_pop >= K_sp:            # strict cap — no overshoot
                 continue
+            macro = random.random() < self.config.get("macro_mut_prob", 0.0)
             child = Individual(ind.species_id,
-                               ind.mutate(self.env_optimum),
+                               ind.mutate(self.env_optimum, macro=macro),
                                (ind.x, ind.y), self.step_count)
             new_offspring.append(child)
-            species_pops[ind.species_id] += 1  # track projected count
+            species_pops[ind.species_id] += 1
 
         self._replication_queue.clear()
 
@@ -719,9 +797,14 @@ class SimulationEngine:
             self._remove_individual(ind_id)
 
     def _update_environment(self) -> None:
-        """Randomly drift the environmental optimum, shifting selective pressures."""
+        """Randomly drift the environmental optimum, shifting selective pressures.
+
+        Uses a larger sigma (0.12) so each environmental event is a meaningful
+        shock that differentially affects well- vs. poorly-adapted individuals,
+        creating divergent selection pressure that drives speciation.
+        """
         self.env_optimum = clamp(
-            self.env_optimum + random.gauss(0.0, 0.05), 0.0, 1.0
+            self.env_optimum + random.gauss(0.0, 0.12), 0.0, 1.0
         )
 
     def _update_outlier_counters(self) -> None:
@@ -747,7 +830,9 @@ class SimulationEngine:
                 elif dist > threshold:
                     ind.outlier_steps += 1
                 else:
-                    ind.outlier_steps = 0
+                    # Slow decay instead of hard reset: accumulated divergence
+                    # is not wiped out by a single step back near the species mean.
+                    ind.outlier_steps = max(0, ind.outlier_steps - 1)
 
     def _update_species_means(self) -> None:
         """Recompute each living species' mean traits from its current members."""
@@ -779,7 +864,12 @@ class SimulationEngine:
                 self._fork_species(sp, outliers)
 
     def _fork_species(self, parent: Species, outliers: list) -> None:
-        """Create a new daughter species from divergent outlier individuals."""
+        """Create a new daughter species from divergent outlier individuals.
+
+        Beyond transferring the outliers, we clone a handful of them into
+        nearby positions so the daughter species starts with enough individuals
+        to survive early competition and not immediately go extinct.
+        """
         new_mean = {t: sum(ind.traits[t] for ind in outliers) / len(outliers)
                     for t in TRAIT_NAMES}
         new_sp = self._create_species(parent_id=parent.id,
@@ -789,6 +879,19 @@ class SimulationEngine:
         for ind in outliers:
             ind.species_id  = new_sp.id
             ind.outlier_steps = 0
+
+        # Seed the daughter species with a few extra clones so it has a viable
+        # founding population rather than surviving on only the outlier handful.
+        W = self.config["grid_width"]
+        H = self.config["grid_height"]
+        n_seeds = min(8, len(outliers) * 2)
+        for _ in range(n_seeds):
+            source = random.choice(outliers)
+            nx = (source.x + random.randint(-3, 3)) % W
+            ny = (source.y + random.randint(-3, 3)) % H
+            seed = Individual(new_sp.id, source.mutate(self.env_optimum),
+                              (nx, ny), self.step_count)
+            self._add_individual(seed)
 
     def _check_extinctions(self) -> None:
         """Mark species with fewer than 3 living members as extinct."""
@@ -983,8 +1086,6 @@ class Visualizer:
                     self.engine.step()
                     if not self.engine.running:
                         break
-                self._tick_battle_flashes()
-
             # Always render; at 100x each rendered frame = 100 sim steps
             self._render()
             self.clock.tick(cur[1])
@@ -1007,21 +1108,12 @@ class Visualizer:
                 if self.hud_rect.collidepoint(mx, my):
                     self.hud_scroll = max(0, self.hud_scroll - event.y * self.hud_row_h)
 
-    def _tick_battle_flashes(self) -> None:
-        """Decrement flash timers and discard expired flashes."""
-        for f in self.engine.battle_flashes:
-            f["timer"] -= 1
-        self.engine.battle_flashes = [
-            f for f in self.engine.battle_flashes if f["timer"] > 0
-        ]
-
     # ── Rendering ─────────────────────────────────────────────────────────────
     def _render(self) -> None:
         self.screen.fill(self.BG)
         self._draw_topbar()
         self._draw_grid_lines()
         self._draw_individuals()
-        self._draw_battle_flashes()
         self._draw_right_panel()
         self._draw_hud()
         pygame.display.flip()
@@ -1082,24 +1174,6 @@ class Visualizer:
                 int(cy + radius * math.sin(2 * math.pi * i / n_sides + offset)))
                for i in range(n_sides)]
         pygame.draw.polygon(surface, color, pts)
-
-    def _draw_battle_flashes(self) -> None:
-        """Render animated starburst effects where battles occurred."""
-        cs = self.cell_size
-        ox, oy = self.grid_ox, self.grid_oy
-        for flash in self.engine.battle_flashes:
-            cx = ox + flash["x"] * cs + cs // 2
-            cy = oy + flash["y"] * cs + cs // 2
-            t    = flash["timer"]              # 1 … 5
-            frac = (t - 1) / 4.0              # 0 = cool, 1 = hot
-            g    = int(200 * frac + 80 * (1 - frac))
-            col  = (255, g, 0)
-            length = max(2, int(cs * 1.4 * t / 5))
-            for i in range(8):
-                angle = math.pi * i / 4.0
-                ex = int(cx + length * math.cos(angle))
-                ey = int(cy + length * math.sin(angle))
-                pygame.draw.line(self.screen, col, (cx, cy), (ex, ey), 2)
 
     def _draw_right_panel(self) -> None:
         """Draw the info panel in the blank area to the right of the grid."""
