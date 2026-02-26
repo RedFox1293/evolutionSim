@@ -44,7 +44,6 @@ jobs:
           PyInstaller --clean --noconfirm --onedir --windowed `
             --collect-all pygame `
             --exclude-module tkinter `
-            --exclude-module unittest `
             --name "Simple Evolution Simulator" evolutionSim.py
           ls dist
 
@@ -54,7 +53,6 @@ jobs:
           PyInstaller --clean --noconfirm --onedir --windowed \
             --collect-all pygame \
             --exclude-module tkinter \
-            --exclude-module unittest \
             --name "Simple Evolution Simulator" evolutionSim.py
           ls dist
 
