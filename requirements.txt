@@ -1,8 +1,5 @@
-math
-random
-sys
-collections
+pygame-ce
 numpy
 pandas
 matplotlib
-pygame
+pyinstaller
