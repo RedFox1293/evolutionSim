@@ -7,6 +7,7 @@ on:
         description: 'Build App'
         required: true
         default: 'Manual run'
+
 jobs:
   build:
     strategy:
@@ -27,7 +28,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.14"
+          python-version: "3.14"  
           cache: "pip"
 
       - name: Install deps
@@ -36,7 +37,6 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
-      # Build (Windows)
       - name: Build Windows exe
         if: runner.os == 'Windows'
         shell: pwsh
@@ -44,32 +44,16 @@ jobs:
           PyInstaller --clean --noconfirm --onefile --windowed --name "Simple Evolution Simulator" evolutionSim.py
           ls dist
 
-      # Build (macOS)
       - name: Build macOS app
         if: runner.os == 'macOS'
         run: |
           PyInstaller --clean --noconfirm --onefile --windowed --name "Simple Evolution Simulator" evolutionSim.py
           ls dist
-          # Optional: zip the .app for artifact upload
-          ditto -c -k --sequesterRsrc --keepParent "dist/EvolutionSim.app" "dist/EvolutionSim-macos.zip"
 
-      - name: Upload artifact (Windows)
-        if: runner.os == 'Windows'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: dist/Simple Evolution Simulator.exe
-
-      - name: Upload artifact (macOS)
-        if: runner.os == 'macOS'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: dist/EvolutionSim-macos.zip
       - name: Create macOS DMG
         if: runner.os == 'macOS'
         run: |
-          APP="dist/EvolutionSim.app"
+          APP="dist/Simple Evolution Simulator.app"   # matches --name above
           DMG_NAME="EvolutionSim-macos.dmg"
           STAGING="dmg-staging"
 
@@ -77,9 +61,15 @@ jobs:
           mkdir -p "$STAGING"
           cp -R "$APP" "$STAGING/"
 
-          # Create a DMG
           hdiutil create -volname "EvolutionSim" -srcfolder "$STAGING" -ov -format UDZO "$DMG_NAME"
           ls -lah "$DMG_NAME"
+
+      - name: Upload artifact (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: "dist/Simple Evolution Simulator.exe"
 
       - name: Upload macOS DMG
         if: runner.os == 'macOS'
