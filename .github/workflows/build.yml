@@ -41,13 +41,13 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          PyInstaller --clean --noconfirm --onefile --windowed --name "Simple Evolution Simulator" evolutionSim.py
+          PyInstaller --clean --noconfirm --onedir --windowed --name "Simple Evolution Simulator" evolutionSim.py
           ls dist
 
       - name: Build macOS app
         if: runner.os == 'macOS'
         run: |
-          PyInstaller --clean --noconfirm --onefile --windowed --name "Simple Evolution Simulator" evolutionSim.py
+          PyInstaller --clean --noconfirm --onedir --windowed --name "Simple Evolution Simulator" evolutionSim.py
           ls dist
 
       - name: Create macOS DMG
