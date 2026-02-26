@@ -28,7 +28,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.14"  
+          python-version: "3.11"
           cache: "pip"
 
       - name: Install deps
@@ -41,13 +41,21 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          PyInstaller --clean --noconfirm --onedir --windowed --name "Simple Evolution Simulator" evolutionSim.py
+          PyInstaller --clean --noconfirm --onedir --windowed `
+            --collect-all pygame `
+            --exclude-module tkinter `
+            --exclude-module unittest `
+            --name "Simple Evolution Simulator" evolutionSim.py
           ls dist
 
       - name: Build macOS app
         if: runner.os == 'macOS'
         run: |
-          PyInstaller --clean --noconfirm --onedir --windowed --name "Simple Evolution Simulator" evolutionSim.py
+          PyInstaller --clean --noconfirm --onedir --windowed \
+            --collect-all pygame \
+            --exclude-module tkinter \
+            --exclude-module unittest \
+            --name "Simple Evolution Simulator" evolutionSim.py
           ls dist
 
       - name: Create macOS DMG
@@ -69,7 +77,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: "dist/Simple Evolution Simulator.exe"
+          path: "dist/Simple Evolution Simulator/"
 
       - name: Upload macOS DMG
         if: runner.os == 'macOS'
